@@ -27,18 +27,20 @@ Vue.config.getTagNamespace = getTagNamespace;
 Vue.config.isUnknownElement = isUnknownElement;
 
 // install platform runtime directives & components
+// 给Vue.options.directives添加model,show属性
+// 给Vue.options.components添加Transition,TransitionGroup属性
 extend(Vue.options.directives, platformDirectives);
 extend(Vue.options.components, platformComponents);
 
 // install platform patch function
-Vue.prototype.__patch__ = inBrowser ? patch : noop;
+Vue.prototype.__patch__ = inBrowser ? patch : noop; // noop 空函数
 
 // public mount method 公共复用部分
 Vue.prototype.$mount = function(
   el?: string | Element,
   hydrating?: boolean
 ): Component {
-  el = el && inBrowser ? query(el) : undefined;
+  el = el && inBrowser ? query(el) : undefined; // 获取根结点元素
   return mountComponent(this, el, hydrating);
 };
 

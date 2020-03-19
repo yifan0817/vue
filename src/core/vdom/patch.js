@@ -126,9 +126,9 @@ export function createPatchFunction(backend) {
 
   // 通过虚拟节点创建真实的 DOM 并插入到它的父节点中
   function createElm(
-    vnode,
+    vnode, // 新的vdom节点
     insertedVnodeQueue,
-    parentElm,
+    parentElm, // 父节点
     refElm,
     nested,
     ownerArray,
@@ -144,6 +144,7 @@ export function createPatchFunction(backend) {
     }
 
     vnode.isRootInsert = !nested; // for transition enter check
+    // 如果是组件则去生成组件
     if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
       return;
     }
@@ -304,9 +305,9 @@ export function createPatchFunction(backend) {
       // 遍历子虚拟节点，递归调用 createElm
       for (let i = 0; i < children.length; ++i) {
         createElm(
-          children[i],
+          children[i], // 作为 vnode 参数传入
           insertedVnodeQueue,
-          vnode.elm,
+          vnode.elm, // 把每次传入的新的 vnode.elm 作为父容器的 DOM 节点占位符传入
           null,
           true,
           children,
@@ -334,8 +335,8 @@ export function createPatchFunction(backend) {
     }
     i = vnode.data.hook; // Reuse variable
     if (isDef(i)) {
-      if (isDef(i.create)) i.create(emptyNode, vnode);
-      if (isDef(i.insert)) insertedVnodeQueue.push(vnode);
+      if (isDef(i.create)) i.create(emptyNode, vnode); // 执行所有的 create 的钩子
+      if (isDef(i.insert)) insertedVnodeQueue.push(vnode); // 把 vnode push 到 insertedVnodeQueue 中
     }
   }
 
@@ -844,6 +845,7 @@ export function createPatchFunction(backend) {
   // hydrating 表示是否是服务端渲染
   // removeOnly 是给 transition-group 用的
   return function patch(oldVnode, vnode, hydrating, removeOnly) {
+    // 新vnode是undefined，则将老的进行销毁
     if (isUndef(vnode)) {
       if (isDef(oldVnode)) invokeDestroyHook(oldVnode);
       return;
@@ -857,12 +859,14 @@ export function createPatchFunction(backend) {
       isInitialPatch = true;
       createElm(vnode, insertedVnodeQueue);
     } else {
-      const isRealElement = isDef(oldVnode.nodeType);
+      const isRealElement = isDef(oldVnode.nodeType); // 真正的dom元素节点
       if (!isRealElement && sameVnode(oldVnode, vnode)) {
         // patch existing root node
         patchVnode(oldVnode, vnode, insertedVnodeQueue, null, null, removeOnly);
       } else {
         if (isRealElement) {
+          // 服务端渲染相关
+
           // mounting to a real element
           // check if this is server-rendered content and if we can perform
           // a successful hydration.
@@ -886,7 +890,8 @@ export function createPatchFunction(backend) {
           }
           // either not server-rendered, or hydration failed.
           // create an empty node and replace it
-          // 把 oldVnode 转换成 VNode 对象
+
+          // 把 oldVnode（真实dom节点） 转换成 VNode 对象
           oldVnode = emptyNodeAt(oldVnode);
         }
 
@@ -895,6 +900,7 @@ export function createPatchFunction(backend) {
         const parentElm = nodeOps.parentNode(oldElm);
 
         // create new node
+        // 核心功能代码
         // 通过虚拟节点创建真实的 DOM 并插入到它的父节点中
         createElm(
           vnode,

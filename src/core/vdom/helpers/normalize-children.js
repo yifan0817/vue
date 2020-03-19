@@ -16,6 +16,10 @@ import { isFalse, isTrue, isDef, isUndef, isPrimitive } from "shared/util";
 // normalization is needed - if any child is an Array, we flatten the whole
 // thing with Array.prototype.concat. It is guaranteed to be only 1-level deep
 // because functional components already normalize their own children.
+
+// 函数式组件可能返回的是一个数组而不是一个根节点
+// 所以会通过 Array.prototype.concat 方法把整个 children 数组打平，让它的深度只有一层
+// children: [child1:[r1,r2]，child2]
 export function simpleNormalizeChildren(children: any) {
   for (let i = 0; i < children.length; i++) {
     if (Array.isArray(children[i])) {
@@ -29,6 +33,8 @@ export function simpleNormalizeChildren(children: any) {
 // e.g. <template>, <slot>, v-for, or when the children is provided by user
 // with hand-written render functions / JSX. In such cases a full normalization
 // is needed to cater to all possible types of children values.
+
+// 当编译 slot、v-for 的时候会产生嵌套数组的情况，会调用 normalizeArrayChildren 方法
 export function normalizeChildren(children: any): ?Array<VNode> {
   return isPrimitive(children) // 是一个基本类型的节点的情况
     ? [createTextVNode(children)] // 创建单个简单的文本节点
@@ -47,6 +53,8 @@ function normalizeArrayChildren(
 ): Array<VNode> {
   const res = [];
   let i, c, lastIndex, last;
+  // children: [child1:[r1,r2,r3]，child2]
+  // [r1,r2,]
   for (i = 0; i < children.length; i++) {
     c = children[i];
     if (isUndef(c) || typeof c === "boolean") continue;
@@ -69,12 +77,13 @@ function normalizeArrayChildren(
         // merge adjacent text nodes 合并连续text 节点
         // this is necessary for SSR hydration because text nodes are
         // essentially merged when rendered to HTML strings
-        res[lastIndex] = createTextVNode(last.text + c);
+        res[lastIndex] = createTextVNode(last.text + c); // 结果数组中上一个节点是字符串，当前这个也是，则进行合并并覆盖上一个节点
       } else if (c !== "") {
         // convert primitive to vnode
-        res.push(createTextVNode(c));
+        res.push(createTextVNode(c)); // 不是空字符串，则推入一个新节点，如果是空串，则什么都不做
       }
     } else {
+      // 当前遍历到的是vnode节点
       if (isTextNode(c) && isTextNode(last)) {
         // merge adjacent text nodes 合并连续text 节点
         res[lastIndex] = createTextVNode(last.text + c.text);

@@ -9,6 +9,8 @@ import platformModules from "web/runtime/modules/index";
 // built-in modules have been applied.
 const modules = platformModules.concat(baseModules);
 
-// nodeOps 封装了一系列 DOM 操作的方法，modules 定义了一些模块的钩子函数的实现
-// 里用到了一个函数柯里化的技巧，通过 createPatchFunction 把差异化参数提前固化，这样不用每次调用 patch 的时候都传递 nodeOps 和 modules 了
+// 工厂函数
+// nodeOps 封装了一系列 DOM 操作的方法
+// modules 定义了一些模块的钩子函数的实现
+// 这里用到了一个函数柯里化的技巧，通过 createPatchFunction 把差异化参数提前固化，这样不用每次调用 patch 的时候都传递 nodeOps 和 modules 了
 export const patch: Function = createPatchFunction({ nodeOps, modules });

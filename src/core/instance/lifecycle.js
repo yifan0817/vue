@@ -34,25 +34,28 @@ export function initLifecycle(vm: Component) {
 
   // locate first non-abstract parent
   let parent = options.parent;
+  // 父实例存在，且该实例不是抽象组件
   if (parent && !options.abstract) {
+    // 定位第一个"非抽象"的父组件
+    // <keep-alive>是抽象组件
     while (parent.$options.abstract && parent.$parent) {
       parent = parent.$parent;
     }
     parent.$children.push(vm);
   }
 
-  vm.$parent = parent;
-  vm.$root = parent ? parent.$root : vm;
+  vm.$parent = parent; // 已创建的实例之父实例
+  vm.$root = parent ? parent.$root : vm; // 当前组件树的根 Vue 实例。如果当前实例没有父实例，此实例将会是其自己
 
-  vm.$children = [];
-  vm.$refs = {};
+  vm.$children = []; // 当前实例的直接子组件
+  vm.$refs = {}; // 一个对象，持有已注册过 ref 的所有子组件
 
-  vm._watcher = null;
-  vm._inactive = null;
-  vm._directInactive = false;
-  vm._isMounted = false;
-  vm._isDestroyed = false;
-  vm._isBeingDestroyed = false;
+  vm._watcher = null; // 组件实例相应的 watcher 实例对象
+  vm._inactive = null; // 表示keep-alive中组件状态，如被激活，该值为false,反之为true
+  vm._directInactive = false; // keep-alive中组件状态的属性
+  vm._isMounted = false; // 当前实例是否完成挂载
+  vm._isDestroyed = false; // 当前实例是否已经被销毁
+  vm._isBeingDestroyed = false; // 当前实例是否正在被销毁,还没有销毁完成
 }
 
 export function lifecycleMixin(Vue: Class<Component>) {
@@ -64,11 +67,12 @@ export function lifecycleMixin(Vue: Class<Component>) {
     vm._vnode = vnode;
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
+    // src/platforms/web/runtime/index.js
     if (!prevVnode) {
-      // initial render
+      // initial render 初始化渲染
       vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */);
     } else {
-      // updates
+      // updates 更新渲染
       vm.$el = vm.__patch__(prevVnode, vnode);
     }
     restoreActiveInstance();
@@ -167,8 +171,10 @@ export function mountComponent(
       }
     }
   }
-  callHook(vm, "beforeMount");
 
+  callHook(vm, "beforeMount"); // 触发beforeMount钩子函数
+
+  // 非生产环境加入性能评估
   let updateComponent;
   /* istanbul ignore if */
   if (process.env.NODE_ENV !== "production" && config.performance && mark) {
@@ -177,18 +183,23 @@ export function mountComponent(
       const id = vm._uid;
       const startTag = `vue-perf-start:${id}`;
       const endTag = `vue-perf-end:${id}`;
-
       mark(startTag);
+
+      // 有效核心代码
       const vnode = vm._render(); // 调用 vm._render 方法先生成虚拟 Node
+
       mark(endTag);
       measure(`vue ${name} render`, startTag, endTag);
-
       mark(startTag);
+
+      // 有效核心代码
       vm._update(vnode, hydrating); // 调用 vm._update 更新 DOM
+
       mark(endTag);
       measure(`vue ${name} patch`, startTag, endTag);
     };
   } else {
+    // 有效核心代码
     updateComponent = () => {
       vm._update(vm._render(), hydrating);
     };
@@ -197,27 +208,38 @@ export function mountComponent(
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
+
+  /** Watcher 在这里起到两个作用
+   * 一个是初始化的时候会执行回调函数
+   * 另一个是当 vm 实例中的监测的数据发生变化的时候执行回调函数
+   */
   new Watcher(
     vm,
     updateComponent,
     noop,
     {
       before() {
+        // 在初次渲染之后，实例的_isMounted为true，在每次渲染更新之前会调用update钩子
         if (vm._isMounted && !vm._isDestroyed) {
           callHook(vm, "beforeUpdate");
         }
       }
     },
+    // 声明为渲染监听器
     true /* isRenderWatcher */
   );
   hydrating = false;
 
   // manually mounted instance, call mounted on self
   // mounted is called for render-created child components in its inserted hook
+
+  /**
+   * vm.$vnode 表示 Vue 实例的父虚拟 Node，所以它为 Null 则表示当前是根 Vue 的实例
+   */
   if (vm.$vnode == null) {
     // 是否是根 Vue 的实例
     vm._isMounted = true;
-    callHook(vm, "mounted");
+    callHook(vm, "mounted"); // 触发mounted钩子函数
   }
   return vm;
 }
@@ -354,6 +376,7 @@ export function callHook(vm: Component, hook: string) {
       invokeWithErrorHandling(handlers[i], vm, null, vm, info);
     }
   }
+  // 一个有着 hook: 特殊前缀的事件，会在对应的生命周期当中执行
   if (vm._hasHookEvent) {
     vm.$emit("hook:" + hook);
   }

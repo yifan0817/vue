@@ -19,8 +19,8 @@ import {
 
 import { normalizeChildren, simpleNormalizeChildren } from "./helpers/index";
 
-const SIMPLE_NORMALIZE = 1;
-const ALWAYS_NORMALIZE = 2;
+const SIMPLE_NORMALIZE = 1; // 用于由模版编译而来的render函数
+const ALWAYS_NORMALIZE = 2; // 用于用户手写的render函数
 
 // wrapper function for providing a more flexible interface
 // without getting yelled at by flow
@@ -50,6 +50,7 @@ export function _createElement(
   children?: any, // 当前 VNode 的子节点
   normalizationType?: number // 子节点规范的类型，类型不同规范的方法也就不一样，它主要是参考 render 函数是编译生成的还是用户手写的
 ): VNode | Array<VNode> {
+  // 如果data已经被响应式处理，则发出警告并返回一个空的vnode
   if (isDef(data) && isDef((data: any).__ob__)) {
     process.env.NODE_ENV !== "production" &&
       warn(
@@ -60,10 +61,12 @@ export function _createElement(
       );
     return createEmptyVNode();
   }
+
   // object syntax in v-bind
   if (isDef(data) && isDef(data.is)) {
     tag = data.is;
   }
+
   if (!tag) {
     // in case of component :is set to falsy value
     return createEmptyVNode();
@@ -83,12 +86,14 @@ export function _createElement(
       );
     }
   }
+
   // support single function children as default scoped slot
   if (Array.isArray(children) && typeof children[0] === "function") {
     data = data || {};
     data.scopedSlots = { default: children[0] };
     children.length = 0;
   }
+
   // _createElement 接收的第 4 个参数 children 是任意类型的，因此我们需要把它们规范成 VNode 类型
   // 对 children 的规范化，children 变成一个类型为 VNode 的 Array
   if (normalizationType === ALWAYS_NORMALIZE) {
@@ -96,6 +101,7 @@ export function _createElement(
   } else if (normalizationType === SIMPLE_NORMALIZE) {
     children = simpleNormalizeChildren(children);
   }
+
   // 创建一个 VNode 的实例
   let vnode, ns;
   // 普通的 html 标签，实例化一个普通 VNode 节点
@@ -104,7 +110,7 @@ export function _createElement(
     ns = (context.$vnode && context.$vnode.ns) || config.getTagNamespace(tag);
     if (config.isReservedTag(tag)) {
       // platform built-in elements
-      // 如果是内置的一些节点，则直接创建一个普通 VNode
+      // 如果是内置的HTML节点，则直接创建一个普通 VNode
       if (
         process.env.NODE_ENV !== "production" &&
         isDef(data) &&
@@ -127,8 +133,8 @@ export function _createElement(
       (!data || !data.pre) &&
       isDef((Ctor = resolveAsset(context.$options, "components", tag)))
     ) {
-      // 如果是为已注册的组件名
-      // component
+      // 如果tag名是组件的情况（通过检查实例是否包含components属性判断）
+      // Ctor 是组件的构造函数
       vnode = createComponent(Ctor, data, context, children, tag);
     } else {
       // 创建一个未知的标签的 VNode
