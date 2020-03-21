@@ -134,7 +134,7 @@ export function _createElement(
       isDef((Ctor = resolveAsset(context.$options, "components", tag)))
     ) {
       // 如果tag名是组件的情况（通过检查实例是否包含components属性判断）
-      // Ctor 是组件的构造函数
+      // Ctor 是组件的构造函数或组件对象
       vnode = createComponent(Ctor, data, context, children, tag);
     } else {
       // 创建一个未知的标签的 VNode

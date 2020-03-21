@@ -27,6 +27,7 @@ import {
 } from "weex/runtime/recycle-list/render-component-template";
 
 // inline hooks to be invoked on component VNodes during patch
+// 组件生命周期钩子
 const componentVNodeHooks = {
   init(vnode: VNodeWithData, hydrating: boolean): ?boolean {
     if (
@@ -38,10 +39,12 @@ const componentVNodeHooks = {
       const mountedNode: any = vnode; // work around flow
       componentVNodeHooks.prepatch(mountedNode, mountedNode);
     } else {
+      // 调用该方法返回子组件的Vue实例，并保存到vnode.componentInstance属性上
       const child = (vnode.componentInstance = createComponentInstanceForVnode(
         vnode,
         activeInstance
       ));
+      // 调用 $mount 方法挂载子组件
       child.$mount(hydrating ? vnode.elm : undefined, hydrating); // 调用 $mount 方法挂载子组件
     }
   },
@@ -92,8 +95,11 @@ const componentVNodeHooks = {
 
 const hooksToMerge = Object.keys(componentVNodeHooks);
 
+// https://www.cnblogs.com/greatdesert/p/11088574.html
+// 在 src/core/vdom/create-element.js 里面的_createElement中被调用
+// 3 个关键逻辑：构造子类构造函数，安装组件钩子函数和实例化 vnode
 export function createComponent(
-  Ctor: Class<Component> | Function | Object | void,
+  Ctor: Class<Component> | Function | Object | void, // 组件的构造函数、普通函数、组件对象
   data: ?VNodeData,
   context: Component,
   children: ?Array<VNode>,
@@ -106,13 +112,15 @@ export function createComponent(
   const baseCtor = context.$options._base;
 
   // plain options object: turn it into a constructor
-  // 执行 Vue.extend
+  // 传入的是组件对象，则执行 Vue.extend 生成对应的构造函数
+  // Vue.extend （src/core/global-api/extend.js）
   if (isObject(Ctor)) {
     Ctor = baseCtor.extend(Ctor);
   }
 
   // if at this stage it's not a constructor or an async component factory,
   // reject.
+  // 此时 Ctor 还不是一个函数类型的话就需要报错了
   if (typeof Ctor !== "function") {
     if (process.env.NODE_ENV !== "production") {
       warn(`Invalid Component definition: ${String(Ctor)}`, context);
@@ -120,7 +128,7 @@ export function createComponent(
     return;
   }
 
-  // async component
+  // async component 异步组件
   let asyncFactory;
   if (isUndef(Ctor.cid)) {
     asyncFactory = Ctor;
@@ -147,7 +155,7 @@ export function createComponent(
   // extract props
   const propsData = extractPropsFromVNodeData(data, Ctor, tag);
 
-  // functional component
+  // functional component 函数式组件
   if (isTrue(Ctor.options.functional)) {
     return createFunctionalComponent(Ctor, propsData, data, context, children);
   }
@@ -172,7 +180,7 @@ export function createComponent(
   }
 
   // install component management hooks onto the placeholder node
-  // 安装组件钩子函数
+  // 安装/合并组件钩子函数
   installComponentHooks(data);
 
   // return a placeholder vnode
@@ -200,36 +208,42 @@ export function createComponent(
   return vnode;
 }
 
+// 给 component 【增加定制options】 + 【调用组件构造函数】
 export function createComponentInstanceForVnode(
   vnode: any, // we know it's MountedComponentVNode but flow doesn't
   parent: any // activeInstance in lifecycle state
 ): Component {
   const options: InternalComponentOptions = {
     _isComponent: true, // 表示它是一个组件
-    _parentVnode: vnode,
-    parent // parent 表示当前激活的组件实例
+    _parentVnode: vnode, // 外壳节点
+    parent // parent 表示当前激活的组件实例（父实例）
   };
   // check inline-template render functions
+  // 尝试获取inlineTemplate属性，定义组件时如果指定了inline-template特性，则组件内的子节点都是该组件的
   const inlineTemplate = vnode.data.inlineTemplate;
   if (isDef(inlineTemplate)) {
     options.render = inlineTemplate.render;
     options.staticRenderFns = inlineTemplate.staticRenderFns;
   }
+  // vnode.componentOptions.Ctor 就是前面 Vue.extend 生成的组件构造函数
+  // 然后会调用内部的_init初始化方法：src/core/instance/init.js initInternalComponent
   return new vnode.componentOptions.Ctor(options);
 }
 
+// 把 componentVNodeHooks 的钩子函数合并到 data.hook 中
 function installComponentHooks(data: VNodeData) {
   const hooks = data.hook || (data.hook = {});
   for (let i = 0; i < hooksToMerge.length; i++) {
     const key = hooksToMerge[i];
-    const existing = hooks[key];
-    const toMerge = componentVNodeHooks[key];
+    const existing = hooks[key]; // 当前已存在的key钩子
+    const toMerge = componentVNodeHooks[key]; // 需要合并的key钩子
     if (existing !== toMerge && !(existing && existing._merged)) {
       hooks[key] = existing ? mergeHook(toMerge, existing) : toMerge;
     }
   }
 }
 
+// 合并两个组件钩子函数，先执行公共的，再执行自行添加的
 function mergeHook(f1: any, f2: any): Function {
   const merged = (a, b) => {
     // flow complains about extra args which is why we use any

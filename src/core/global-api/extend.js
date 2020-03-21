@@ -18,9 +18,10 @@ export function initExtend(Vue: GlobalAPI) {
    */
   Vue.extend = function(extendOptions: Object): Function {
     extendOptions = extendOptions || {};
-    const Super = this;
+    const Super = this; // this -> Vue
     const SuperId = Super.cid;
     const cachedCtors = extendOptions._Ctor || (extendOptions._Ctor = {});
+    // 有这个SuperId对应的生成的构造函数的缓存，则直接返回
     if (cachedCtors[SuperId]) {
       return cachedCtors[SuperId];
     }

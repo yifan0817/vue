@@ -220,11 +220,15 @@ export function createPatchFunction(backend) {
     }
   }
 
+  // https://www.cnblogs.com/greatdesert/p/11088574.html
+  // parentElm == 父DOM 节点
+  // refElm == 兄弟DOM节点，你插入父节点，可能也要知道插在谁附近不是吗，不能乱插的
   function createComponent(vnode, insertedVnodeQueue, parentElm, refElm) {
     let i = vnode.data;
     if (isDef(i)) {
       const isReactivated = isDef(vnode.componentInstance) && i.keepAlive;
       if (isDef((i = i.hook)) && isDef((i = i.init))) {
+        // init 是组件的钩子函数 vnode.data.hook.init
         i(vnode, false /* hydrating */);
       }
       // after calling the init hook, if the vnode is a child component
@@ -233,7 +237,7 @@ export function createPatchFunction(backend) {
       // in that case we can just return the element and be done.
       if (isDef(vnode.componentInstance)) {
         initComponent(vnode, insertedVnodeQueue);
-        insert(parentElm, vnode.elm, refElm);
+        insert(parentElm, vnode.elm, refElm); // 完成组件的 DOM 插入
         if (isTrue(isReactivated)) {
           reactivateComponent(vnode, insertedVnodeQueue, parentElm, refElm);
         }

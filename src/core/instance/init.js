@@ -91,18 +91,22 @@ export function initInternalComponent(
   vm: Component,
   options: InternalComponentOptions
 ) {
+  // 这个options 就是在创建构造函数时，合并的 options，全局选项和组件设置选项
   const opts = (vm.$options = Object.create(vm.constructor.options));
   // doing this because it's faster than dynamic enumeration.
+  // 保存父节点，外壳节点，兄弟节点等
   const parentVnode = options._parentVnode;
   opts.parent = options.parent;
   opts._parentVnode = parentVnode;
 
+  // 保存父组件给子组件关联的数据
   const vnodeComponentOptions = parentVnode.componentOptions;
   opts.propsData = vnodeComponentOptions.propsData;
   opts._parentListeners = vnodeComponentOptions.listeners;
   opts._renderChildren = vnodeComponentOptions.children;
   opts._componentTag = vnodeComponentOptions.tag;
 
+  // 保存渲染函数
   if (options.render) {
     opts.render = options.render;
     opts.staticRenderFns = options.staticRenderFns;
