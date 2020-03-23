@@ -108,9 +108,9 @@ export function lifecycleMixin(Vue: Class<Component>) {
     // remove self from parent
     const parent = vm.$parent;
     if (parent && !parent._isBeingDestroyed && !vm.$options.abstract) {
-      remove(parent.$children, vm);
+      remove(parent.$children, vm); // 从 parent 的 $children 中删掉自身
     }
-    // teardown watchers
+    // teardown watchers  销毁 watchers 和 watcher
     if (vm._watcher) {
       vm._watcher.teardown();
     }
@@ -128,9 +128,9 @@ export function lifecycleMixin(Vue: Class<Component>) {
     // invoke destroy hooks on current rendered tree
     vm.__patch__(vm._vnode, null);
     // fire destroyed hook
-    callHook(vm, "destroyed");
+    callHook(vm, "destroyed"); // 触发 destroyed 钩子
     // turn off all instance listeners.
-    vm.$off();
+    vm.$off(); // 解绑所有事件监听
     // remove __vue__ reference
     if (vm.$el) {
       vm.$el.__vue__ = null;
@@ -221,7 +221,8 @@ export function mountComponent(
       before() {
         // 在初次渲染之后，实例的_isMounted为true，在每次渲染更新之前会调用update钩子
         if (vm._isMounted && !vm._isDestroyed) {
-          callHook(vm, "beforeUpdate");
+          callHook(vm, "beforeUpdate"); // 触发beforeUpdate钩子
+          // updated钩子的触发实在 src/core/observer/scheduler.js 中的 callUpdatedHooks 函数中调用
         }
       }
     },
@@ -240,6 +241,9 @@ export function mountComponent(
     // 是否是根 Vue 的实例
     vm._isMounted = true;
     callHook(vm, "mounted"); // 触发mounted钩子函数
+  } else {
+    // 对组件的 mounted 钩子触发在 src/core/vdom/create-component.js 中 insert 钩子函数中
+    // callHook(componentInstance, "mounted");
   }
   return vm;
 }
@@ -366,6 +370,7 @@ export function deactivateChildComponent(vm: Component, direct?: boolean) {
   }
 }
 
+// 调用某个生命周期钩子注册的所有回调函数
 export function callHook(vm: Component, hook: string) {
   // #7573 disable dep collection when invoking lifecycle hooks
   pushTarget();

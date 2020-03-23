@@ -44,7 +44,7 @@ export function createElement(
 }
 
 export function _createElement(
-  context: Component, // VNode 的上下文环境
+  context: Component, // vm实例
   tag?: string | Class<Component> | Function | Object, // 标签
   data?: VNodeData, // VNode 的数据
   children?: any, // 当前 VNode 的子节点
@@ -133,8 +133,9 @@ export function _createElement(
       (!data || !data.pre) &&
       isDef((Ctor = resolveAsset(context.$options, "components", tag)))
     ) {
-      // 如果tag名是组件的情况（通过检查实例是否包含components属性判断）
+      // 如果tag名是组件的情况（通过检查实例的$options上是否包含components[tag]属性判断，从Vue.component注册来的）
       // Ctor 是组件的构造函数或组件对象
+      // 当该组件是异步组件时，Ctor是注册时的工厂函数
       vnode = createComponent(Ctor, data, context, children, tag);
     } else {
       // 创建一个未知的标签的 VNode

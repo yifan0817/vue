@@ -128,12 +128,16 @@ export function createComponent(
     return;
   }
 
-  // async component 异步组件
+  // async component 异步组件 (Ctor是注册时的工厂函数)
   let asyncFactory;
+  // 只有执行过Vue.extend才会有cid，注册异步组件时传入的是函数故不会走Vue.extend，没有cid
   if (isUndef(Ctor.cid)) {
     asyncFactory = Ctor;
     Ctor = resolveAsyncComponent(asyncFactory, baseCtor);
     if (Ctor === undefined) {
+      // 如果是第一次执行 resolveAsyncComponent
+      // 除非使用高级异步组件 0 delay 去创建了一个 loading 组件，否则返回是 undefiend
+      // 通过 createAsyncPlaceholder 创建一个注释节点作为占位符
       // return a placeholder node for async component, which is rendered
       // as a comment node but preserves all the raw information for the node.
       // the information will be used for async server-rendering and hydration.
@@ -225,6 +229,7 @@ export function createComponentInstanceForVnode(
     options.render = inlineTemplate.render;
     options.staticRenderFns = inlineTemplate.staticRenderFns;
   }
+  // 子组件的初始化
   // vnode.componentOptions.Ctor 就是前面 Vue.extend 生成的组件构造函数
   // 然后会调用内部的_init初始化方法：src/core/instance/init.js initInternalComponent
   return new vnode.componentOptions.Ctor(options);

@@ -54,6 +54,9 @@ export function initGlobalAPI(Vue: GlobalAPI) {
 
   Vue.options = Object.create(null);
   // options中添加components、directives、filters属性
+  // Vue.options.components = {}
+  // Vue.options.directives = {}
+  // Vue.options.filters = {}
   ASSET_TYPES.forEach(type => {
     Vue.options[type + "s"] = Object.create(null);
   });
@@ -63,11 +66,12 @@ export function initGlobalAPI(Vue: GlobalAPI) {
   // options中添加_base属性
   Vue.options._base = Vue;
 
-  // options中components添加 KeepAlive
+  // 把一些内置组件扩展到 Vue.options.components
+  // options中components添加 <keep-alive> 组件 Vue.options.components.KeepAlive : {}
   extend(Vue.options.components, builtInComponents);
 
   initUse(Vue);
   initMixin(Vue);
   initExtend(Vue);
-  initAssetRegisters(Vue);
+  initAssetRegisters(Vue); // 注册 Vue.component、directive和filter函数
 }

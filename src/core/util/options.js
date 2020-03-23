@@ -1,3 +1,5 @@
+// options 合并方法和策略
+
 /* @flow */
 
 import config from "../config";
@@ -145,6 +147,7 @@ strats.data = function(
 /**
  * Hooks and props are merged as arrays.
  * Hooks and props 都被合并成数组形式
+ * 一旦 parent 和 child 都定义了相同的钩子函数，那么它们会把 2 个钩子函数合并成一个数组
  */
 function mergeHook(
   parentVal: ?Array<Function>,
@@ -156,7 +159,7 @@ function mergeHook(
       : Array.isArray(childVal)
       ? childVal //   child上存在该属性，parent不存在，且child上的该属性是Array，则直接返回child上的该属性
       : [childVal] // child上存在该属性，parent不存在，且child上的该属性不是Array，则把该属性先转换成Array,再返回
-    : parentVal; // child options上不存在该属性，parent options上存在,则返回parent上的属性
+    : parentVal; // child options上不存在该属性，不管parent options上是否存在,都返回parent上的属性
   return res ? dedupeHooks(res) : res; // 数组去重
 }
 
@@ -271,6 +274,7 @@ strats.provide = mergeDataOrFn;
 
 /**
  * Default strategy.
+ * 默认策略：优先取子配置
  */
 const defaultStrat = function(parentVal: any, childVal: any): any {
   return childVal === undefined ? parentVal : childVal;
@@ -420,6 +424,7 @@ function assertObjectType(name: string, value: any, vm: ?Component) {
  * Merge two option objects into a new one.
  * Core utility used in both instantiation and inheritance.
  * 实例化和继承中使用的核心方法
+ * 把 parent 和 child 这两个对象根据一些合并策略，合并成一个新对象并返回
  */
 export function mergeOptions(
   parent: Object,
@@ -435,7 +440,7 @@ export function mergeOptions(
     child = child.options;
   }
 
-  // 把options中的props,inject,directives属性转换成对象的形式，因为有些传入的时候可能会是数组的形式
+  // 把options中的props,inject,directives属性转换成对象的规范形式，因为有些传入的时候可能会是数组的形式
   // 参考链接：https://segmentfault.com/a/1190000014707956
   normalizeProps(child, vm); // 规范化props options.props
   normalizeInject(child, vm); // 规范化注入 options.inject
@@ -446,7 +451,7 @@ export function mergeOptions(
   // the result of another mergeOptions call.
   // Only merged options has the _base property.
   // 传入的options里有mixin或者extends属性时
-  // 再次调用mergeOptions方法合并mixins和extends里的内容到实例的构造函数options上（即parent options）
+  // 递归调用mergeOptions方法合并mixins和extends里的内容到实例的构造函数options上（即parent options = Vue.options）
   if (!child._base) {
     if (child.extends) {
       // 类型：Object | Function
@@ -469,6 +474,7 @@ export function mergeOptions(
   }
   for (key in child) {
     if (!hasOwn(parent, key)) {
+      // parent 没有key属性才执行合并，避免重复跑上面已处理过的
       mergeField(key);
     }
   }

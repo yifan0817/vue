@@ -37,7 +37,8 @@ export function initMixin(Vue: Class<Component>) {
 
     // merge options 合并配置
     if (options && options._isComponent) {
-      // 有子组件时，options._isComponent才会为true，即当前这个Vue实例是组件
+      // 属性来源：src/core/vdom/create-component.js - createComponentInstanceForVnode
+      // 是组件时，options._isComponent才会为true，即当前这个Vue实例是组件
       // 优化组件实例，因为动态选项合并很慢，并且也没有组件的选项需要特殊对待
       // optimize internal component instantiation
       // since dynamic options merging is pretty slow, and none of the
@@ -46,7 +47,7 @@ export function initMixin(Vue: Class<Component>) {
     } else {
       // 把构造函数的 options 和用户传入的 options 做一层合并，到 vm.$options 上
       vm.$options = mergeOptions(
-        resolveConstructorOptions(vm.constructor),
+        resolveConstructorOptions(vm.constructor), // 返回 Vue.options （initGlobalAPI 中定义的）
         options || {},
         vm
       );
@@ -70,6 +71,13 @@ export function initMixin(Vue: Class<Component>) {
     initProvide(vm); // resolve provide after data/props
     callHook(vm, "created"); // 触发created钩子函数
 
+    /**
+     * 生命周期解释：
+     * 在这俩个钩子函数执行的时候，并没有渲染 DOM，所以我们也不能够访问 DOM
+     * 一般来说，如果组件在加载的时候需要和后端有交互，放在这俩个钩子函数执行都可以
+     * 如果是需要访问 props、data 等数据的话，就需要使用 created 钩子函数
+     */
+
     /* istanbul ignore if */
     if (process.env.NODE_ENV !== "production" && config.performance && mark) {
       vm._name = formatComponentName(vm, false);
@@ -87,17 +95,20 @@ export function initMixin(Vue: Class<Component>) {
   };
 }
 
+// 组件 options 处理
 export function initInternalComponent(
   vm: Component,
   options: InternalComponentOptions
 ) {
-  // 这个options 就是在创建构造函数时，合并的 options，全局选项和组件设置选项
+  // 这里的 vm.constructor 就是子组件的构造函数 Sub
+  // 这个options 就是在Vue.extend里创建构造函数时，合并的 options，全局选项和组件设置选项
   const opts = (vm.$options = Object.create(vm.constructor.options));
   // doing this because it's faster than dynamic enumeration.
+
   // 保存父节点，外壳节点，兄弟节点等
   const parentVnode = options._parentVnode;
-  opts.parent = options.parent;
-  opts._parentVnode = parentVnode;
+  opts.parent = options.parent; // 父Vue实例
+  opts._parentVnode = parentVnode; // 父VNode实例
 
   // 保存父组件给子组件关联的数据
   const vnodeComponentOptions = parentVnode.componentOptions;
@@ -122,7 +133,7 @@ export function resolveConstructorOptions(Ctor: Class<Component>) {
     if (superOptions !== cachedSuperOptions) {
       // super option changed,
       // need to resolve new options.
-      // 父类的options改变过了,例如执行了Vue.mixin方法
+      // 父类的options改变过了，例如执行了Vue.mixin方法
       Ctor.superOptions = superOptions;
       // check if there are any late-modified/attached options (#4976)
       const modifiedOptions = resolveModifiedOptions(Ctor);
@@ -137,6 +148,7 @@ export function resolveConstructorOptions(Ctor: Class<Component>) {
       }
     }
   }
+  // Ctor是Vue本身，则直接换回 Ctor.options
   return options;
 }
 

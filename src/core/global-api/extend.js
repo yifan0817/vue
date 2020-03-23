@@ -38,7 +38,7 @@ export function initExtend(Vue: GlobalAPI) {
     Sub.prototype = Object.create(Super.prototype);
     Sub.prototype.constructor = Sub;
     Sub.cid = cid++;
-    Sub.options = mergeOptions(Super.options, extendOptions);
+    Sub.options = mergeOptions(Super.options, extendOptions); // 合并父构造函数的options和传入的options
     Sub["super"] = Super;
 
     // For props and computed properties, we define the proxy getters on
