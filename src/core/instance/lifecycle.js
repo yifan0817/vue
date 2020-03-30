@@ -201,6 +201,8 @@ export function mountComponent(
   } else {
     // 有效核心代码
     updateComponent = () => {
+      // _render：src/core/instance/render.js
+      // Vue.prototype._update：就在本文件顶部
       vm._update(vm._render(), hydrating);
     };
   }

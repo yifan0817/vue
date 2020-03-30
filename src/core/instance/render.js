@@ -34,6 +34,7 @@ export function initRender(vm: Component) {
   // user-written render functions.
   // 规范化始终适用于公共版本，用于用户手写render函数
   vm.$createElement = (a, b, c, d) => createElement(vm, a, b, c, d, true);
+  // createElement：src/core/vdom/create-element.js
 
   // $attrs & $listeners are exposed for easier HOC creation.
   // they need to be reactive so that HOCs using them are always updated
@@ -117,6 +118,7 @@ export function renderMixin(Vue: Class<Component>) {
 
       // 核心代码
       // render 最终是通过执行 createElement 方法并返回的是 vnode
+      // $createElement 定义就在当前文件顶部
       vnode = render.call(vm._renderProxy, vm.$createElement);
     } catch (e) {
       handleError(e, vm, `render`);

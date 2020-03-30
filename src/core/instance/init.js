@@ -37,7 +37,8 @@ export function initMixin(Vue: Class<Component>) {
 
     // merge options 合并配置
     if (options && options._isComponent) {
-      // 属性来源：src/core/vdom/create-component.js - createComponentInstanceForVnode
+      // 调用来源：组件的componentOptions.Ctor构造函数执行
+      // _isComponent属性来源：src/core/vdom/create-component.js - createComponentInstanceForVnode
       // 是组件时，options._isComponent才会为true，即当前这个Vue实例是组件
       // 优化组件实例，因为动态选项合并很慢，并且也没有组件的选项需要特殊对待
       // optimize internal component instantiation
@@ -87,6 +88,7 @@ export function initMixin(Vue: Class<Component>) {
 
     if (vm.$options.el) {
       // $mount 这个方法的实现是和平台、构建方式都相关
+      // src/platforms/web/runtime/index.js
       vm.$mount(vm.$options.el); // 把模板渲染成最终的 DOM，最终调用的是 core/instance/lifecycle 的 mountComponent方法
     } else {
       // 如果 Vue 实例在实例化时没有收到 el 选项，则它处于“未挂载”状态，没有关联的 DOM 元素
@@ -102,17 +104,17 @@ export function initInternalComponent(
 ) {
   // 这里的 vm.constructor 就是子组件的构造函数 Sub
   // 这个options 就是在Vue.extend里创建构造函数时，合并的 options，全局选项和组件设置选项
-  const opts = (vm.$options = Object.create(vm.constructor.options));
+  const opts = (vm.$options = Object.create(vm.constructor.options)); // 组件的配置信息
   // doing this because it's faster than dynamic enumeration.
 
   // 保存父节点，外壳节点，兄弟节点等
-  const parentVnode = options._parentVnode;
+  const parentVnode = options._parentVnode; // 该组件的占位符VNode
   opts.parent = options.parent; // 父Vue实例
   opts._parentVnode = parentVnode; // 父VNode实例
 
   // 保存父组件给子组件关联的数据
-  const vnodeComponentOptions = parentVnode.componentOptions;
-  opts.propsData = vnodeComponentOptions.propsData;
+  const vnodeComponentOptions = parentVnode.componentOptions; // 占位符VNode初始化传入的配置信息
+  opts.propsData = vnodeComponentOptions.propsData; // 经过extractPropsFromVNodeData()得到的propsData对象
   opts._parentListeners = vnodeComponentOptions.listeners;
   opts._renderChildren = vnodeComponentOptions.children;
   opts._componentTag = vnodeComponentOptions.tag;

@@ -137,6 +137,7 @@ export function _createElement(
       // Ctor 是组件的构造函数或组件对象
       // 当该组件是异步组件时，Ctor是注册时的工厂函数
       vnode = createComponent(Ctor, data, context, children, tag);
+      // 将返回的实例化组件 外壳 VNode传给下一步update作为参数
     } else {
       // 创建一个未知的标签的 VNode
       // unknown or unlisted namespaced elements

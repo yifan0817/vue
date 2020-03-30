@@ -196,7 +196,7 @@ export function createPatchFunction(backend) {
           insert(parentElm, vnode.elm, refElm);
         }
       } else {
-        // 创建子元素
+        // 递归调用createElm创建子元素
         createChildren(vnode, children, insertedVnodeQueue);
         // 执行所有的 create 的钩子并把 vnode push 到 insertedVnodeQueue
         if (isDef(data)) {
@@ -228,7 +228,8 @@ export function createPatchFunction(backend) {
     if (isDef(i)) {
       const isReactivated = isDef(vnode.componentInstance) && i.keepAlive;
       if (isDef((i = i.hook)) && isDef((i = i.init))) {
-        // init 是组件的钩子函数 vnode.data.hook.init
+        // init 是注册进外壳节点的钩子函数 vnode.data.hook.init
+        // src/core/vdom/create-component.js componentVNodeHooks.init
         i(vnode, false /* hydrating */);
       }
       // after calling the init hook, if the vnode is a child component
@@ -844,7 +845,7 @@ export function createPatchFunction(backend) {
   }
 
   // 最终返回了一个 patch 方法，这个方法就赋值给了 vm._update 函数里调用的 vm.__patch__
-  // oldVnode 表示旧的 VNode 节点，它也可以不存在或者是一个 DOM 对象
+  // oldVnode 表示旧的 VNode 节点，它也可以不存在或者是一个 DOM 对象（el，挂载新节点）
   // vnode 表示执行 _render 后返回的 VNode 的节点
   // hydrating 表示是否是服务端渲染
   // removeOnly 是给 transition-group 用的

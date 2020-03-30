@@ -328,6 +328,14 @@ function normalizeProps(options: Object, vm: ?Component) {
   const res = {};
   let i, val, name;
   if (Array.isArray(props)) {
+    /**
+     * 数组用法
+     * props:['title']
+     * 转化成
+     * {
+     *  title: {type: null}
+     * }
+     */
     i = props.length;
     while (i--) {
       val = props[i];
@@ -363,6 +371,19 @@ function normalizeProps(options: Object, vm: ?Component) {
       vm
     );
   }
+  /**
+   * 最终都被处理成规范的对象格式
+    Props: {
+      key1: {
+        type // 类型，可以设置为:String、Number、Boolean、Array、Object、Date等等;如果只设置type而未设置其他选项，则值可以直接用类型，例如:props:{title:Object}
+        default // 默认值
+        required // 布尔类型，表示是否必填项目
+        validator // 自定义验证函数
+      },
+      key2: {},
+      key3: {},
+    }
+   */
   options.props = res;
 }
 

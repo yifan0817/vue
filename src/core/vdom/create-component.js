@@ -44,8 +44,10 @@ const componentVNodeHooks = {
         vnode,
         activeInstance
       ));
-      // 调用 $mount 方法挂载子组件
-      child.$mount(hydrating ? vnode.elm : undefined, hydrating); // 调用 $mount 方法挂载子组件
+      // src/platforms/web/runtime/index.js
+      // 手动调用实例 vm.$mount 进行挂载
+      // 内部又会调用组件的_render和_update，然后_update中patch的createElm继续递归下去
+      child.$mount(hydrating ? vnode.elm : undefined, hydrating);
     }
   },
 
@@ -97,11 +99,15 @@ const hooksToMerge = Object.keys(componentVNodeHooks);
 
 // https://www.cnblogs.com/greatdesert/p/11088574.html
 // 在 src/core/vdom/create-element.js 里面的_createElement中被调用
-// 3 个关键逻辑：构造子类构造函数，安装组件钩子函数和实例化 vnode
+// 主要做4件事情：
+// 1、构造子类构造函数
+// 2、处理父组件给子组件的数据，安装组件钩子函数
+// 3、特殊处理函数组件和异步组件
+// 4、创建组件 外壳 VNode
 export function createComponent(
   Ctor: Class<Component> | Function | Object | void, // 组件的构造函数、普通函数、组件对象
   data: ?VNodeData,
-  context: Component,
+  context: Component, // 是执行整个渲染函数的上下文对象，即页面的 实例vm
   children: ?Array<VNode>,
   tag?: string
 ): VNode | Array<VNode> | void {
@@ -130,6 +136,8 @@ export function createComponent(
 
   // async component 异步组件 (Ctor是注册时的工厂函数)
   let asyncFactory;
+  // Vue.component(component-name,obj|func)，组件的值可以是一个对象，也可以是一个函数
+  // 如果是对象，则注册时会执行Vue.extend()函数
   // 只有执行过Vue.extend才会有cid，注册异步组件时传入的是函数故不会走Vue.extend，没有cid
   if (isUndef(Ctor.cid)) {
     asyncFactory = Ctor;
@@ -157,6 +165,7 @@ export function createComponent(
   }
 
   // extract props
+  // 获取props的值
   const propsData = extractPropsFromVNodeData(data, Ctor, tag);
 
   // functional component 函数式组件
@@ -187,17 +196,22 @@ export function createComponent(
   // 安装/合并组件钩子函数
   installComponentHooks(data);
 
+  /**
+   * 外壳节点的作用：
+   * 1、保存刚创建好的组件构造函数
+   * 2、保存父组件给子组件 关联的数据，比如 event，props 之类
+   */
   // return a placeholder vnode
-  // 实例化 VNode
+  // 实例化组件 外壳 VNode
   const name = Ctor.options.name || tag;
   const vnode = new VNode(
     `vue-component-${Ctor.cid}${name ? `-${name}` : ""}`,
     data,
-    undefined,
+    undefined, // 组件的 vnode 是没有 children 的！！！
     undefined,
     undefined,
     context,
-    { Ctor, propsData, listeners, tag, children },
+    { Ctor, propsData, listeners, tag, children }, // componentOptions
     asyncFactory
   );
 
@@ -230,7 +244,7 @@ export function createComponentInstanceForVnode(
     options.staticRenderFns = inlineTemplate.staticRenderFns;
   }
   // 子组件的初始化
-  // vnode.componentOptions.Ctor 就是前面 Vue.extend 生成的组件构造函数
+  // vnode.componentOptions.Ctor 就是前面外壳节点上挂载的 Vue.extend 生成的组件构造函数
   // 然后会调用内部的_init初始化方法：src/core/instance/init.js initInternalComponent
   return new vnode.componentOptions.Ctor(options);
 }
