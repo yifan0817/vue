@@ -68,13 +68,17 @@ export default class Watcher {
     this.id = ++uid; // uid for batching
     this.active = true;
     this.dirty = this.lazy; // for lazy watchers
-    this.deps = [];
-    this.newDeps = [];
-    this.depIds = new Set();
-    this.newDepIds = new Set();
+
+    // Dep 相关属性
+    this.deps = []; //  Watcher 实例上一次添加的 Dep 实例数组
+    this.newDeps = []; // newDeps 新添加的 Dep 实例数组
+    this.depIds = new Set(); // this.deps 的 id Set
+    this.newDepIds = new Set(); // this.newDeps 的 id Set
+
     this.expression =
       process.env.NODE_ENV !== "production" ? expOrFn.toString() : "";
     // parse expression for getter
+    // 保存传入的“更新函数”
     if (typeof expOrFn === "function") {
       this.getter = expOrFn;
     } else {
@@ -90,6 +94,7 @@ export default class Watcher {
           );
       }
     }
+    // 新建 watcher 的时候，立即执行更新函数
     this.value = this.lazy ? undefined : this.get();
   }
 
@@ -97,7 +102,7 @@ export default class Watcher {
    * Evaluate the getter, and re-collect dependencies.
    */
   get() {
-    pushTarget(this);
+    pushTarget(this); // 设置Dep.target = this（当前watcher）
     let value;
     const vm = this.vm;
     try {
@@ -112,9 +117,9 @@ export default class Watcher {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
       if (this.deep) {
-        traverse(value);
+        traverse(value); // 递归去访问 value
       }
-      popTarget();
+      popTarget(); // 把 Dep.target 恢复成上一个状态
       this.cleanupDeps();
     }
     return value;
@@ -122,6 +127,7 @@ export default class Watcher {
 
   /**
    * Add a dependency to this directive.
+   * 向此指令添加依赖项
    */
   addDep(dep: Dep) {
     const id = dep.id;
@@ -142,9 +148,11 @@ export default class Watcher {
     while (i--) {
       const dep = this.deps[i];
       if (!this.newDepIds.has(dep.id)) {
+        // 移除对 dep.subs 数组中 Wathcer 的订阅
         dep.removeSub(this);
       }
     }
+    // 把 newDepIds 和 depIds 交换，newDeps 和 deps 交换，并把 newDepIds 和 newDeps 清空
     let tmp = this.depIds;
     this.depIds = this.newDepIds;
     this.newDepIds = tmp;
@@ -176,14 +184,14 @@ export default class Watcher {
    */
   run() {
     if (this.active) {
-      const value = this.get();
+      const value = this.get(); // 执行 getter 方法，完成更新，获取当前的值
       if (
-        value !== this.value ||
+        value !== this.value || // 新旧值不等
         // Deep watchers and watchers on Object/Arrays should fire even
         // when the value is the same, because the value may
         // have mutated.
-        isObject(value) ||
-        this.deep
+        isObject(value) || // 新值是对象类型
+        this.deep // deep 模式
       ) {
         // set new value
         const oldValue = this.value;

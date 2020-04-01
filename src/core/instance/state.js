@@ -35,6 +35,9 @@ const sharedPropertyDefinition = {
   set: noop
 };
 
+// 作用：把 props 和 data 上的属性代理到 vm 实例上
+// 把 vm._data.xxx 的访问都代理到 vm.xxx 上
+// 把 vm._props.xxx 的访问都代理到 vm.xxx 上
 export function proxy(target: Object, sourceKey: string, key: string) {
   sharedPropertyDefinition.get = function proxyGetter() {
     return this[sourceKey][key];
@@ -76,7 +79,8 @@ function initProps(vm: Component, propsOptions: Object) {
   }
   for (const key in propsOptions) {
     keys.push(key); // 保存key
-    // 执行validateProp检查propsData里的key值是否符合propsOptions里对应的要求，并将值保存到value里面
+    // 检查propsData里的key值是否符合propsOptions里对应的要求
+    // 并将值保存到value里面
     const value = validateProp(key, propsOptions, propsData, vm);
     /* istanbul ignore else */
     if (process.env.NODE_ENV !== "production") {
@@ -103,12 +107,15 @@ function initProps(vm: Component, propsOptions: Object) {
       });
     } else {
       // 将key变成响应式，同时也定义了props的key属性的值为value
+      // 可以通过 vm._props.xxx 访问到定义 props 中对应的属性
       defineReactive(props, key, value);
     }
     // static props are already proxied on the component's prototype
     // during Vue.extend(). We only need to proxy props defined at
     // instantiation here.
+    // 在Vue.extend（）期间，静态props已经代理在组件的原型上，我们只需要代理在实例化时定义的props
     if (!(key in vm)) {
+      // 把 vm._props.xxx 的访问代理到 vm.xxx 上
       proxy(vm, `_props`, key);
     }
   }
@@ -132,6 +139,7 @@ function initData(vm: Component) {
   const props = vm.$options.props;
   const methods = vm.$options.methods;
   let i = keys.length;
+  // 遍历 data 数据对象的key ，重名检测，合规检测
   while (i--) {
     const key = keys[i];
     if (process.env.NODE_ENV !== "production") {
@@ -150,10 +158,13 @@ function initData(vm: Component) {
           vm
         );
     } else if (!isReserved(key)) {
+      // 把每一个值 vm._data.xxx 都代理到 vm.xxx 上
       proxy(vm, `_data`, key);
     }
   }
   // observe data
+  // 把 data 也变成响应式
+  // 可以通过 vm._data.xxx 访问到定义 data 返回函数中对应的属性
   observe(data, true /* asRootData */);
 }
 
